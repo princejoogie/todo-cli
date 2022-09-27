@@ -1,73 +1,70 @@
 import React, { useState } from "react";
 import { Text, Box, useInput } from "ink";
 import { todoService } from "./services/todo";
-import { useQuery } from "./hooks/use-query";
+import { useMutation, useQuery } from "./hooks";
 
-let idConst = 0;
+type Mode = "normal" | "insert";
 
 const App = () => {
-  const todos = useQuery(["hello"], todoService.getAll);
-
-  console.log(todos);
-
-  return <Text>Hello World</Text>;
-};
-
-export const AppOld = () => {
-  const [todos, setTodos] = useState<
-    Array<{ id: number; text: string; done: boolean }>
-  >([]);
-  const [input, setInput] = useState("");
   const [pos, setPos] = useState(0);
-  const [mode, setMode] = useState("normal");
+  const [mode, setMode] = useState<Mode>("normal");
+  const [input, setInput] = useState("");
 
-  useInput((letter, key) => {
+  const todos = useQuery(["todos"], todoService.getAll);
+
+  const create = useMutation(todoService.create, {
+    onSuccess: () => {
+      todos.refetch();
+      setInput("");
+    },
+  });
+
+  const toggle = useMutation(todoService.toggle, {
+    onSuccess: todos.refetch,
+  });
+
+  const deleteOne = useMutation(todoService.deleteById, {
+    onSuccess: todos.refetch,
+  });
+
+  useInput((char, key) => {
     if (mode === "normal") {
-      if (
-        letter === "i" ||
-        letter === "I" ||
-        letter === "a" ||
-        letter === "A"
-      ) {
+      if (char === "R") {
+        todos.refetch();
+      } else if (char === "a") {
         setMode("insert");
-      } else if (letter === "j" || letter === "J") {
+      } else if (char === "j") {
         setPos((e) => {
-          if (e < todos.length - 1) return e + 1;
+          if (todos.data && e < todos.data?.length - 1) return e + 1;
           return e;
         });
-      } else if (letter === "k" || letter === "K") {
+      } else if (char === "k") {
         setPos((e) => {
           if (e > 0) return e - 1;
           return e;
         });
-      } else if (letter === "x" || letter === "X") {
-        setTodos((e) => {
-          const newTodos = [...e];
-          newTodos.splice(pos, 1);
-
-          if (pos > newTodos.length - 1 && newTodos.length > 0) {
-            setPos(newTodos.length - 1);
-          }
-
-          return [...newTodos];
-        });
+      } else if (char === "x" || char === "X") {
+        if (todos.data && todos.data[pos]) {
+          deleteOne.mutate({ where: { id: todos.data[pos]?.id } });
+        }
       } else if (key.return) {
-        setTodos((e) => {
-          const newTodos = [...e];
-          if (newTodos[pos]) newTodos[pos]!.done = !newTodos[pos]!.done;
-          return [...newTodos];
-        });
+        const _data = todos.data?.[pos];
+        if (_data) {
+          toggle.mutate({
+            id: _data.id,
+            done: _data.done,
+          });
+        }
       }
     } else if (mode === "insert") {
       if (key.backspace || key.delete) {
         setInput((e) => e.slice(0, -1));
       } else if (key.return) {
-        setTodos((e) => [...e, { text: input, done: false, id: idConst++ }]);
-        setInput("");
+        create.mutate({ content: input });
       } else if (key.escape) {
         setMode("normal");
       } else {
-        setInput((e) => `${e}${letter}`);
+        setInput((e) => `${e}${char}`);
       }
     }
   });
@@ -88,21 +85,22 @@ export const AppOld = () => {
           </Text>
         </Box>
 
-        {todos.length > 0 ? (
-          todos.map((todo, idx) => (
-            <Box key={todo.id} width="full">
-              <Text
-                backgroundColor={
-                  idx === pos && mode === "normal" ? "#111827" : undefined
-                }
-                color={idx === pos && mode === "normal" ? "#ffffff" : "#9ca3af"}
-              >
-                {todo.done ? "☒" : "☐"} {todo.text}
-              </Text>
-            </Box>
-          ))
+        {todos.data && todos.data.length > 0 ? (
+          todos.data?.map((todo, idx) => {
+            const active = pos === idx && mode === "normal";
+            return (
+              <Box key={todo.id} width="100%">
+                <Text
+                  backgroundColor={active ? "#1f2937" : undefined}
+                  color="#ffffff"
+                >
+                  {todo.done ? "☒" : "☐"} {todo.content}
+                </Text>
+              </Box>
+            );
+          })
         ) : (
-          <Text>No todos yet.</Text>
+          <Text color="#ffffff">No todos</Text>
         )}
       </Box>
     </Box>
