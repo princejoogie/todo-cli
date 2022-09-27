@@ -1,0 +1,26 @@
+{
+  "name": "todo-cli",
+  "version": "0.0.0",
+  "license": "MIT",
+  "bin": "dist/index.js",
+  "scripts": {
+    "build": "tsc && chmod +x dist/index.js",
+    "start": "dist/index.js",
+    "dev": "tsnd src/index.tsx"
+  },
+  "files": [
+    "dist/index.js"
+  ],
+  "dependencies": {
+    "ink": "^3.2.0",
+    "react": "^17.0.2"
+  },
+  "devDependencies": {
+    "@sindresorhus/tsconfig": "^3.0.1",
+    "@types/node": "^18.7.23",
+    "@types/react": "^18.0.21",
+    "chalk": "^4.1.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^4.8.3"
+  }
+}
