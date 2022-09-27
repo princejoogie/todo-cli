@@ -18,7 +18,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# prisma
+prisma/dev.db
+
 # local env files
+.env
 .envrc
 .env.local
 .env.development.local
