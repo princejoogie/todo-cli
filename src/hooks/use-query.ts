@@ -1,42 +1,63 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
-const queryCache = new Map();
+export type UseQueryKeys = Array<string | number>;
 
-const setQueryData = (key: string, data: any) => {
+export type UseQueryResult<T extends () => Promise<any>> = {
+  data: Awaited<ReturnType<T>> | null;
+  isLoading: boolean;
+  error: unknown | null;
+  refetch: () => void;
+};
+
+export type UseQueryFunction = <T extends () => Promise<any>>(
+  keys: UseQueryKeys,
+  queryFn: T,
+  options?: {
+    onSuccess?: (data: Awaited<ReturnType<T>>) => void;
+    onError?: (error: unknown) => void;
+  }
+) => UseQueryResult<T>;
+
+export const queryCache = new Map();
+
+export const setQueryData = (key: string, data: any) => {
   queryCache.set(key, data);
 };
 
-const createQueryKey = (keys: Array<string | number>) => {
+export const createQueryKey = (keys: UseQueryKeys) => {
   return keys.join("-");
 };
 
-type UseQueryResult<T> = {
-  data: T | null;
-  isLoading: boolean;
-};
-
-export const useQuery = <T extends () => Promise<any>>(
-  key: Array<string | number>,
-  fetcher: T,
-): UseQueryResult<T> => {
+export const useQuery: UseQueryFunction = (key, queryFn, options) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const fetcher = useCallback(() => {
     setIsLoading(true);
+    setError(null);
     const queryKey = createQueryKey(key);
 
-    if (queryCache.has(queryKey)) {
-      setIsLoading(false);
-    } else {
-      fetcher().then((data) => {
+    queryFn()
+      .then((data) => {
+        options?.onSuccess?.(data);
         setQueryData(queryKey, data);
         setIsLoading(false);
+      })
+      .catch((e) => {
+        options?.onError?.(e);
+        setError(e);
+        setIsLoading(false);
       });
-    }
-  }, [key, fetcher]);
+  }, [key, queryFn, options?.onSuccess, options?.onError]);
+
+  useEffect(() => {
+    fetcher();
+  }, []);
 
   return {
     data: queryCache.get(createQueryKey(key)) ?? null,
     isLoading,
+    error,
+    refetch: fetcher,
   };
 };
