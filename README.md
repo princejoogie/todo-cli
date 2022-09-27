@@ -2,6 +2,24 @@
 
 bloated todo-cli. created for the purposes of reimplementing useQuery and useMutation from [TanStack Query](https://tanstack.com/query/v4) but in node.
 
+![demo](./demo.gif)
+
+## Setup
+
+```sh
+# install deps
+yarn install
+# sync db
+yarn run prisma db push
+
+# dev
+yarn dev
+# build
+yarn build
+# start
+yarn start
+```
+
 ## Usage
 
 ```
@@ -18,19 +36,6 @@ NORMAL MODE:
   enter = toggle at cursor
 ```
 
-```sh
-# install deps
-yarn install
+---
 
-# sync db
-yarn run prisma db push
-
-# dev
-yarn dev
-
-# build
-yarn build
-
-# start
-yarn start
-```
+Made with ☕ by Prince Carlo Juguilon
